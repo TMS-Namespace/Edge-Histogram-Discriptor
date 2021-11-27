@@ -20,9 +20,9 @@ EHD.horizontal_blocks_count = 4;
 EHD.vertical_blocks_count = 4;
 
 bins = EHD.get_blocks_bins_vector(); % only block bins
-bins = EHD.get_semi_local_bins_vector; % semi-local bins
+bins = EHD.get_semi_local_bins_vector(); % semi-local bins
 bins = EHD.get_global_bins_vector(); % global bins
-bins = EHD.get_full_bins_vector; % all above together
+bins = EHD.get_full_bins_vector(); % all above together
 ```
 
 ## Requirements and dependencies
