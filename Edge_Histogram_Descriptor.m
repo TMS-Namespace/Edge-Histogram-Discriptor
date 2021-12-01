@@ -199,7 +199,7 @@ classdef Edge_Histogram_Descriptor < handle
            
             obj.image = image;
             
-            obj.normalize = false;
+            obj.normalize = true;
             obj.voting_threshold = 50;
             
             obj.horizontal_blocks_count = 4;
@@ -222,12 +222,13 @@ classdef Edge_Histogram_Descriptor < handle
                obj.calc_indexed_blocks_bins();
            end    
            
-           %blocks_bins_vector = [];
-           blocks_bins_vector = zeros(1, obj.vertical_blocks_count * obj.horizontal_blocks_count * 5);
-            for y = 0 : obj.vertical_blocks_count - 1
+           % allocate array
+           blocks_bins_vector = [];
+           
+           %block_ind =
+           for y = 0 : obj.vertical_blocks_count - 1
                 for x = 0 : obj.horizontal_blocks_count - 1               
-                    %blocks_bins_vector =  cat(2, blocks_bins_vector,  reshape(obj.indexed_blocks_bins(y + 1, x + 1, :), [1, 5]));
-                       blocks_bins_vector(1, ((y + x)*5 + 1) : ((y + x)*5 + 5)) =  reshape(obj.indexed_blocks_bins(y + 1, x + 1, :), [1, 5]);
+                       blocks_bins_vector =  cat(2, blocks_bins_vector,  reshape(obj.indexed_blocks_bins(y + 1, x + 1, :), [1, 5]));
                 end
             end           
             
