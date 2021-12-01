@@ -1,6 +1,6 @@
 # Edge Histogram Descriptor (EHD)
 
- This is a small Matlab class, that implements MPEG-7 texture descriptor "Edge Histogram Descriptor" (see paper [1]), along with improvements suggested in paper [2], particularly the semi-local features.
+ This is a small Matlab class, that implements MPEG-7 texture descriptor "Edge Histogram Descriptor" (see paper [1]), along with improvements suggested in paper [2], particularly the semi-local features. Additionally, it allows arbitrary blocks count and rectangular images.
 
 ## Purpose
 

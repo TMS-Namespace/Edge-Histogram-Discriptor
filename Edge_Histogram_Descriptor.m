@@ -12,14 +12,14 @@ classdef Edge_Histogram_Descriptor < handle
     
     % Created by: TMS-Namespace
     % Publishing date: 27/11/2021
-    % Ref: https://github.com/TMS-Namespace
+    % GitHub: https://github.com/TMS-Namespace
     
     properties % public properties
         
         % a flag if bins should be normalized (by cells count, or block count in clusters)
         normalize
         % threshold for considering cells vote as considerable
-        threshold
+        voting_threshold
         
         % the number of vertical and horizontal blocks that the image will
         % be divided into
@@ -39,6 +39,9 @@ classdef Edge_Histogram_Descriptor < handle
         % will handle information on block sizes in pixels
         horizontal_block_size
         vertical_block_size
+        
+        % just to save cells count in block
+        cells_per_block
         
         % will handle matrix operators
         matrix_operator_vertical
@@ -76,8 +79,10 @@ classdef Edge_Histogram_Descriptor < handle
                 throw(ME);
             end
 
+            % calc some constants
             obj.horizontal_block_size = c / obj.horizontal_blocks_count;
             obj.vertical_block_size =  r / obj.vertical_blocks_count;
+            obj.cells_per_block = (obj.horizontal_block_size / 2) * (obj.horizontal_block_size / 2);
 
             % split image to blocks
             for y = 0 : obj.vertical_blocks_count - 1 % we start from zero
@@ -135,7 +140,7 @@ classdef Edge_Histogram_Descriptor < handle
             
             % if the max vote smaller than a threshold, we return 0, that
             % corresponds to no bin
-            if vote < obj.threshold
+            if vote < obj.voting_threshold
                 bin_index = 0 ;
             end
             
@@ -161,16 +166,21 @@ classdef Edge_Histogram_Descriptor < handle
                 end
             end
             
+            % normalize
+            bins_vectors = obj.normalize_bins(bins_vectors, (to_x - from_x + 1) * (to_y - from_y + 1));
+                        
+        end
+    
+        function normalized = normalize_bins(obj, bins_vectors, blocks_count)
             % normalize by cells count, and block count
             if obj.normalize
-                cells_per_block = (obj.horizontal_block_size / 2) * (obj.horizontal_block_size / 2);
-                blocks_count = (to_x - from_x + 1) * (to_y - from_y + 1);
-                bins_vectors = bins_vectors / (cells_per_block * blocks_count);
+                normalized = bins_vectors / (obj.cells_per_block * blocks_count);
+            else
+                normalized = bins_vectors;
             end
-            
-        end 
-        
-    end
+        end
+    
+ end
     
     methods % public methods
 
@@ -185,7 +195,7 @@ classdef Edge_Histogram_Descriptor < handle
             obj.image = image;
             
             obj.normalize = false;
-            obj.threshold = 50;
+            obj.voting_threshold = 50;
             
             obj.horizontal_blocks_count = 4;
             obj.vertical_blocks_count = 4;
@@ -200,7 +210,7 @@ classdef Edge_Histogram_Descriptor < handle
         end
 
        function blocks_bins_vector = get_blocks_bins_vector(obj)
-           % returns a vector of all block bins
+           % returns a vector of all block' bins
            if isempty(obj.indexed_blocks_bins)
                obj.calc_indexed_blocks_bins();
            end    
@@ -213,10 +223,8 @@ classdef Edge_Histogram_Descriptor < handle
                 end
             end           
             
-            % normalize by number of cells
-            if obj.normalize
-                blocks_bins_vector = blocks_bins_vector / (obj.horizontal_block_size / 2 * obj.horizontal_block_size / 2);
-            end
+            % normalize by the number of cells          
+            blocks_bins_vector = obj.normalize_bins(blocks_bins_vector, 1);
             
        end
 
@@ -248,12 +256,8 @@ classdef Edge_Histogram_Descriptor < handle
                     cluster_bins_vector = cluster_bins_vector +  reshape(obj.indexed_blocks_bins(y, x, :), [1, 5]);
                 end
                 % normalize by cells, and clusters' block count
-                if obj.normalize
-                    cells_per_block = (obj.horizontal_block_size / 2) * (obj.horizontal_block_size / 2);
-                    blocks_count = obj.horizontal_blocks_count;
-                    cluster_bins_vector = cluster_bins_vector / (cells_per_block * blocks_count);
-                end
-                % add this cluster to whole vector
+                cluster_bins_vector = obj.normalize_bins(cluster_bins_vector, obj.horizontal_blocks_count);
+                % add this cluster to the whole vector
                 semi_local_bins_vector = cat(2, semi_local_bins_vector, cluster_bins_vector);
                 % reset cluster vector for next cluster
                 cluster_bins_vector = zeros(1, 5);
@@ -266,12 +270,8 @@ classdef Edge_Histogram_Descriptor < handle
                     cluster_bins_vector = cluster_bins_vector +  reshape(obj.indexed_blocks_bins(y, x, :), [1, 5]);
                 end
                 % normalize by cells, and clusters' block count
-                if obj.normalize
-                    cells_per_block = (obj.horizontal_block_size / 2) * (obj.horizontal_block_size / 2);
-                    blocks_count = obj.vertical_blocks_count;
-                    cluster_bins_vector = cluster_bins_vector / (cells_per_block * blocks_count);
-                end
-                % add this cluster to whole vector
+                cluster_bins_vector = obj.normalize_bins(cluster_bins_vector, obj.vertical_blocks_count);
+                % add this cluster to the whole vector
                 semi_local_bins_vector = cat(2, semi_local_bins_vector, cluster_bins_vector);
                 % reset cluster vector for next cluster
                 cluster_bins_vector = zeros(1, 5);
@@ -279,27 +279,27 @@ classdef Edge_Histogram_Descriptor < handle
             
             % generate upper-left cluster
             cluster_bins_vector = obj.sum_block_bins(1, obj.horizontal_blocks_count / 2, 1, obj.vertical_blocks_count / 2 );
-            % add this cluster to whole vector
+            % add this cluster to the whole vector
             semi_local_bins_vector = cat(2, semi_local_bins_vector, cluster_bins_vector);
                 
             % generate upper-right cluster
             cluster_bins_vector = obj.sum_block_bins(obj.horizontal_blocks_count / 2 +1, obj.horizontal_blocks_count , 1, obj.vertical_blocks_count/2 );
-            % add this cluster to whole vector
+            % add this cluster to the whole vector
             semi_local_bins_vector = cat(2, semi_local_bins_vector, cluster_bins_vector);
 
             % generate bottom-left cluster
             cluster_bins_vector = obj.sum_block_bins(1, obj.horizontal_blocks_count / 2 , obj.vertical_blocks_count / 2 + 1, obj.vertical_blocks_count );
-            % add this cluster to whole vector
+            % add this cluster to the whole vector
             semi_local_bins_vector = cat(2, semi_local_bins_vector, cluster_bins_vector);
             
             % generate bottom-right cluster
             cluster_bins_vector = obj.sum_block_bins(obj.horizontal_blocks_count / 2 + 1, obj.horizontal_blocks_count, obj.vertical_blocks_count / 2 + 1, obj.vertical_blocks_count );
-            % add this cluster to whole vector
+            % add this cluster to the whole vector
             semi_local_bins_vector = cat(2, semi_local_bins_vector, cluster_bins_vector);
             
             % finally, generate the "middle" cluster
             cluster_bins_vector = obj.sum_block_bins(obj.horizontal_blocks_count / 4 + 1, obj.horizontal_blocks_count * 3 /4, obj.vertical_blocks_count / 4 + 1, obj.vertical_blocks_count * 3 / 4 );
-            % add this cluster to whole vector
+            % add this cluster to the whole vector
             semi_local_bins_vector = cat(2, semi_local_bins_vector, cluster_bins_vector);
             
        end
